@@ -1,0 +1,20 @@
+US 3D + Máscara real
+        │
+        ▼
+Downsample
+        │
+        ▼
+FASE 1 — rápida
+Localização aproximada da fronteira
+        │
+        ▼
+Boundary / ROI confidence map
+        │
+        ▼
+Imagem de maior resolução + mapa da Fase 1
+        │
+        ▼
+FASE 2 — refinamento
+        │
+        ▼
+Segmentação final
