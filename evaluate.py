@@ -10,6 +10,7 @@ import os
 
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 
 from dataset import ShellDataset, get_splits
 from metrics import dice, mae
@@ -18,9 +19,12 @@ from model import UNet3D
 OUT = "C:/Users/user/Desktop/boundary_first_then_refine"
 
 
-def evaluate(model, dataset, device, threshold: float = 0.5) -> list[dict]:
+def evaluate(model, dataset, device, threshold: float = 0.5, save_dir: str = None) -> list[dict]:
     model.eval()
     results = []
+
+    if save_dir:
+        os.makedirs(save_dir, exist_ok=True)
 
     with torch.no_grad():
         for i in range(len(dataset)):
@@ -34,6 +38,13 @@ def evaluate(model, dataset, device, threshold: float = 0.5) -> list[dict]:
 
             dice_score = dice(pred, y, threshold=threshold)
             mae_score  = mae(pred, y)
+
+            if save_dir:
+                case = os.path.basename(path)
+                np.save(
+                    os.path.join(save_dir, case.replace(".npz", "_pred.npy")),
+                    pred.cpu().numpy()
+                )
 
             results.append({
                 "case":    os.path.basename(path),
@@ -54,7 +65,11 @@ def main():
     parser.add_argument("--threshold",  type=float, default=0.5,
                         help="threshold for binarizing boundary map")
     parser.add_argument("--base-ch",    type=int,   default=16)
+    parser.add_argument("--save-preds", action="store_true",
+                        help="save predicted boundary maps to preds/")
     args = parser.parse_args()
+
+    save_dir = os.path.join(OUT, "preds") if args.save_preds else None
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -68,7 +83,9 @@ def main():
     print(f"Loaded: {args.checkpoint}")
     print(f"Split: {args.split}  Cases: {len(dataset)}  Threshold: {args.threshold}\n")
 
-    results = evaluate(model, dataset, device, threshold=args.threshold)
+    results = evaluate(model, dataset, device, threshold=args.threshold, save_dir=save_dir)
+    if save_dir:
+        print(f"Predictions saved to: {save_dir}\n")
 
     valid   = [r for r in results if not r["skipped"]]
     skipped = [r for r in results if r["skipped"]]
