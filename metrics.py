@@ -6,10 +6,7 @@ def mae(pred: torch.Tensor, target: torch.Tensor) -> float:
 
 
 def dice(pred: torch.Tensor, target: torch.Tensor, threshold: float = 0.5) -> float:
-    """
-    Volumetric binary Dice over a single case.
-    Returns None when the target has no positive voxels (no boundary to evaluate).
-    """
+    # Returns None when the target has no positive voxels.
     pred_bin   = (pred   >= threshold).float()
     target_bin = (target >= threshold).float()
 

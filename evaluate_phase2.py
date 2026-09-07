@@ -1,8 +1,8 @@
 """
 Usage:
-python evaluate.py
-python evaluate.py --split train
-python evaluate.py --run-dir runs/20260907_143022/phase1
+python evaluate_phase2.py
+python evaluate_phase2.py --split train
+python evaluate_phase2.py --run-dir runs/20260907_143022/phase2
 """
 
 import argparse
@@ -11,8 +11,8 @@ import os
 import numpy as np
 import torch
 
-from dataset import ShellDataset, get_splits
-from metrics import dice, mae
+from dataset_phase2 import CropDataset, get_crop_splits
+from metrics import dice
 from model import UNet3D
 
 OUT = "C:/Users/user/Desktop/boundary_first_then_refine"
@@ -41,9 +41,8 @@ def evaluate(model, dataset, device, threshold: float, save_dir: str = None) -> 
                 )
 
             results.append({
-                "case":    os.path.basename(path),
-                "mae":     mae(pred, y),
-                "dice":    dice(pred, y, threshold=threshold),
+                "case":  os.path.basename(path),
+                "dice":  dice(pred, y, threshold=threshold),
             })
 
     return results
@@ -62,16 +61,16 @@ def main():
     parser.add_argument("--split",       type=str,   default="val")
     parser.add_argument("--threshold",   type=float, default=0.5)
     parser.add_argument("--base-ch",     type=int,   default=16)
-    parser.add_argument("--shells-dir",  type=str,   default=None,
-                        help="directory containing shell .npz files")
+    parser.add_argument("--crops-dir",   type=str,   default=None,
+                        help="directory containing crop .npz files")
     parser.add_argument("--splits-json", type=str,   default=None,
                         help="path to splits.json")
     args = parser.parse_args()
 
     run_dir    = args.run_dir
     checkpoint = args.checkpoint or (
-        os.path.join(run_dir, "checkpoints", "phase1_best.pth") if run_dir
-        else os.path.join(OUT, "checkpoints", "phase1_best.pth")
+        os.path.join(run_dir, "checkpoints", "phase2_best.pth") if run_dir
+        else os.path.join(OUT, "checkpoints", "phase2_best.pth")
     )
     save_dir     = os.path.join(run_dir, f"eval_{args.split}", "preds") if run_dir else None
     summary_path = os.path.join(run_dir, f"eval_{args.split}", "summary.txt") if run_dir else None
@@ -81,43 +80,39 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    train_paths, val_paths = get_splits(val_fraction=0.2, shells_dir=args.shells_dir, splits_json=args.splits_json)
+    train_paths, val_paths = get_crop_splits(crops_dir=args.crops_dir, splits_json=args.splits_json)
     paths   = val_paths if args.split == "val" else train_paths
-    dataset = ShellDataset(paths, augment=False)
+    dataset = CropDataset(paths, augment=False)
 
     model = UNet3D(in_channels=2, base_channels=args.base_ch).to(device)
     model.load_state_dict(torch.load(checkpoint, map_location=device))
+    model.eval()
 
     print(f"Checkpoint: {checkpoint}")
     print(f"Split: {args.split}  Cases: {len(dataset)}  Threshold: {args.threshold}\n")
 
     results = evaluate(model, dataset, device, threshold=args.threshold, save_dir=save_dir)
 
-    valid = [r for r in results if r["dice"] is not None]
+    valid  = [r for r in results if r["dice"] is not None]
+    scores = [r["dice"] for r in valid]
 
     with open(summary_path, "w") if summary_path else open(os.devnull, "w") as f:
-        print_and_write(f"{'Case':<30}  {'MAE':>6}  {'Dice':>6}", f)
-        print_and_write("-" * 48, f)
+        print_and_write(f"{'Case':<30}  {'Dice':>6}", f)
+        print_and_write("-" * 40, f)
         for r in results:
-            dice_str = f"{r['dice']:.4f}" if r["dice"] is not None else "  skip"
-            print_and_write(f"  {r['case']:<28}  {r['mae']:.4f}  {dice_str:>6}", f)
-        print_and_write("-" * 48, f)
+            val = f"{r['dice']:.4f}" if r["dice"] is not None else "  skip"
+            print_and_write(f"  {r['case']:<28}  {val:>6}", f)
+        print_and_write("-" * 40, f)
 
-        mae_scores  = [r["mae"]  for r in results]
-        dice_scores = [r["dice"] for r in valid]
-
-        print_and_write(f"\n  Mean MAE  : {np.mean(mae_scores):.4f}", f)
-        print_and_write(f"  Std  MAE  : {np.std(mae_scores):.4f}", f)
-
-        if dice_scores:
-            print_and_write(f"\n  Mean Dice : {np.mean(dice_scores):.4f}", f)
-            print_and_write(f"  Std  Dice : {np.std(dice_scores):.4f}", f)
-            print_and_write(f"  Min  Dice : {np.min(dice_scores):.4f}", f)
-            print_and_write(f"  Max  Dice : {np.max(dice_scores):.4f}", f)
+        if scores:
+            print_and_write(f"\n  Mean Dice : {np.mean(scores):.4f}", f)
+            print_and_write(f"  Std       : {np.std(scores):.4f}", f)
+            print_and_write(f"  Min       : {np.min(scores):.4f}", f)
+            print_and_write(f"  Max       : {np.max(scores):.4f}", f)
 
         skipped = len(results) - len(valid)
         if skipped:
-            print_and_write(f"\n  Skipped: {skipped}", f)
+            print_and_write(f"\n  Skipped (empty mask): {skipped}", f)
 
     if summary_path:
         print(f"\nSummary saved to: {summary_path}")
