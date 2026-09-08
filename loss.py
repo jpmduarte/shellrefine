@@ -6,6 +6,10 @@ def mse(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     return F.mse_loss(pred, target)
 
 
+def l1(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    return F.l1_loss(pred, target)
+
+
 def bce(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     return F.binary_cross_entropy(pred, target)
 
@@ -25,6 +29,7 @@ def dice_bce(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
 LOSSES = {
     "mse":      mse,
+    "l1":       l1,
     "bce":      bce,
     "mse_bce":  mse_bce,
     "dice":     dice_loss,

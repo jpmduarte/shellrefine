@@ -22,9 +22,13 @@ class ConvBlock(nn.Module):
 
 class UNet3D(nn.Module):
 
-    def __init__(self, in_channels: int = 2, base_channels: int = 16):
+    def __init__(self, in_channels: int = 2, base_channels: int = 16,
+                 out_activation: str = "sigmoid"):
         super().__init__()
         c = base_channels
+        # Phase 1 regresses a signed field in [-1, 1] (tanh); phase 2 outputs a
+        # probability (sigmoid).
+        self.out_activation = out_activation
 
         self.enc1 = ConvBlock(in_channels, c)
         self.enc2 = ConvBlock(c,     c * 2)
@@ -53,7 +57,13 @@ class UNet3D(nn.Module):
         d2 = self.dec2(torch.cat([self._match(self.up2(d3), e2), e2], dim=1))
         d1 = self.dec1(torch.cat([self._match(self.up1(d2), e1), e1], dim=1))
 
-        return torch.sigmoid(self.head(d1))
+        out = self.head(d1)
+
+        if self.out_activation == "sigmoid":
+            return torch.sigmoid(out)
+        if self.out_activation == "tanh":
+            return torch.tanh(out)
+        return out
 
     @staticmethod
     def _match(x: torch.Tensor, ref: torch.Tensor) -> torch.Tensor:
