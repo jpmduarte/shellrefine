@@ -6,19 +6,21 @@ python evaluate.py --run-dir runs/20260907_143022/phase1
 """
 
 import argparse
+import json
 import os
 
 import numpy as np
 import torch
 
 from dataset import ShellDataset, get_splits
-from metrics import dice, mae
+from metrics import dice_from_sdf, mae
 from model import UNet3D
+from profiler import Profiler, model_summary
 
-OUT = "C:/Users/user/Desktop/boundary_first_then_refine"
+OUT = os.path.dirname(os.path.abspath(__file__))
 
 
-def evaluate(model, dataset, device, threshold: float, save_dir: str = None) -> list[dict]:
+def evaluate(model, dataset, device, prof, save_dir: str = None) -> list[dict]:
     model.eval()
     results = []
 
@@ -28,11 +30,14 @@ def evaluate(model, dataset, device, threshold: float, save_dir: str = None) -> 
     with torch.no_grad():
         for i in range(len(dataset)):
             path = dataset.paths[i]
-            x, y = dataset[i]
 
-            x    = x.unsqueeze(0).to(device)
-            y    = y.to(device)
-            pred = model(x).squeeze(0)
+            with prof.span("inference_case") as span:
+                x, y, _w = dataset[i]
+
+                x    = x.unsqueeze(0).to(device)
+                y    = y.to(device)
+                pred = model(x).squeeze(0)
+                span["items"] = 1
 
             if save_dir:
                 np.save(
@@ -43,7 +48,7 @@ def evaluate(model, dataset, device, threshold: float, save_dir: str = None) -> 
             results.append({
                 "case":    os.path.basename(path),
                 "mae":     mae(pred, y),
-                "dice":    dice(pred, y, threshold=threshold),
+                "dice":    dice_from_sdf(pred, y),
             })
 
     return results
@@ -60,12 +65,13 @@ def main():
                         help="run folder — derives checkpoint and saves all outputs there")
     parser.add_argument("--checkpoint",  type=str,   default=None)
     parser.add_argument("--split",       type=str,   default="val")
-    parser.add_argument("--threshold",   type=float, default=0.5)
     parser.add_argument("--base-ch",     type=int,   default=16)
     parser.add_argument("--shells-dir",  type=str,   default=None,
                         help="directory containing shell .npz files")
     parser.add_argument("--splits-json", type=str,   default=None,
                         help="path to splits.json")
+    parser.add_argument("--profile-dir", type=str,   default=None,
+                        help="directory to append profiling logs to")
     args = parser.parse_args()
 
     run_dir    = args.run_dir
@@ -85,13 +91,17 @@ def main():
     paths   = val_paths if args.split == "val" else train_paths
     dataset = ShellDataset(paths, augment=False)
 
-    model = UNet3D(in_channels=2, base_channels=args.base_ch).to(device)
+    model = UNet3D(in_channels=1, base_channels=args.base_ch, out_activation="tanh").to(device)
     model.load_state_dict(torch.load(checkpoint, map_location=device))
 
     print(f"Checkpoint: {checkpoint}")
-    print(f"Split: {args.split}  Cases: {len(dataset)}  Threshold: {args.threshold}\n")
+    print(f"Split: {args.split}  Cases: {len(dataset)}  (interior = sdf < 0)\n")
 
-    results = evaluate(model, dataset, device, threshold=args.threshold, save_dir=save_dir)
+    prof = Profiler("phase1_eval", config=vars(args), profile_dir=args.profile_dir)
+    prof.config_update({"model": model_summary(model), "data": {"cases": len(dataset)}})
+
+    with prof:
+        results = evaluate(model, dataset, device, prof=prof, save_dir=save_dir)
 
     valid = [r for r in results if r["dice"] is not None]
 
@@ -120,6 +130,25 @@ def main():
             print_and_write(f"\n  Skipped: {skipped}", f)
 
     if summary_path:
+        # Machine-readable twin of summary.txt, for aggregate_results.py — avoids
+        # regex-scraping the fixed-width text table.
+        summary_json = {
+            "checkpoint": checkpoint,
+            "split":      args.split,
+            "cases":      results,
+            "aggregate": {
+                "mae_mean":  float(np.mean(mae_scores)),
+                "mae_std":   float(np.std(mae_scores)),
+                "dice_mean": float(np.mean(dice_scores)) if dice_scores else None,
+                "dice_std":  float(np.std(dice_scores))  if dice_scores else None,
+                "dice_min":  float(np.min(dice_scores))  if dice_scores else None,
+                "dice_max":  float(np.max(dice_scores))  if dice_scores else None,
+                "skipped":   skipped,
+            },
+        }
+        with open(os.path.join(os.path.dirname(summary_path), "summary.json"), "w") as f:
+            json.dump(summary_json, f, indent=2)
+
         print(f"\nSummary saved to: {summary_path}")
     if save_dir:
         print(f"Predictions saved to: {save_dir}")

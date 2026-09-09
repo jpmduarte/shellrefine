@@ -12,8 +12,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Slider
 
-SHELLS = "C:/Users/user/Desktop/boundary_first_then_refine/shells"
-PREDS  = "C:/Users/user/Desktop/boundary_first_then_refine/preds"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SHELLS = os.path.join(BASE_DIR, "shells")
+PREDS  = os.path.join(BASE_DIR, "preds")
 
 
 def load(path: str) -> dict:
@@ -21,7 +22,7 @@ def load(path: str) -> dict:
     return {
         "img":    data["img"],
         "mask":   data["mask"].astype(bool),
-        "target": data["boundary_target"],
+        "target": data["sdf"],
     }
 
 
@@ -68,7 +69,7 @@ def main():
     fig.suptitle(os.path.basename(path), fontsize=12)
     plt.subplots_adjust(bottom=0.18, wspace=0.05)
 
-    titles = ["Image", "Mask overlay", "GT boundary", "Predicted boundary"]
+    titles = ["Image", "Mask overlay", "GT signed distance", "Predicted signed distance"]
     for ax, title in zip(axes, titles[:n_panels]):
         ax.set_title(title)
         ax.axis("off")
@@ -76,8 +77,8 @@ def main():
     im0 = axes[0].imshow(img[mid],    cmap="gray",    vmin=img.min(), vmax=img.max())
     im1 = axes[1].imshow(img[mid],    cmap="gray",    vmin=img.min(), vmax=img.max())
     ov  = axes[1].imshow(mask[mid],   cmap="Reds",    alpha=0.4,      vmin=0, vmax=1)
-    im2 = axes[2].imshow(target[mid], cmap="inferno", vmin=0,         vmax=1)
-    im3 = axes[3].imshow(pred[mid],   cmap="inferno", vmin=0,         vmax=1) if has_pred else None
+    im2 = axes[2].imshow(target[mid], cmap="coolwarm", vmin=-1,       vmax=1)
+    im3 = axes[3].imshow(pred[mid],   cmap="coolwarm", vmin=-1,       vmax=1) if has_pred else None
 
     if not has_pred:
         print("No prediction found — run: python evaluate.py --save-preds")

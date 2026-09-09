@@ -1,4 +1,10 @@
 shells
 crops
+experiment
+logs
+manifests
+runs
 preds
 __pycache__
+slurm-*.out
+slurm-*.err

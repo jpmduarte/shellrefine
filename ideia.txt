@@ -18,3 +18,20 @@ FASE 2 — refinamento
         │
         ▼
 Segmentação final
+
+
+
+
+
+
+
+Olá Helena, como arquitetura defini isto após algumas tentativas:
+
+Primeiro calcula-se o SDF (Signed Distance Field) em resolução nativa a partir do label de cada caso. Depois reduz-se tanto a imagem como o SDF para um volume pequeno de 32x32x32, o downsample. A primeira fase treina com a imagem reduzida como input e o SDF reduzido como target, aprende a prever o SDF a partir da imagem, usando uma loss L1 combinada com uma loss de gradiente que compara a forma da superfície prevista com a real.
+Obtendo-se a previsão do SDF downsampled, essa previsão é upsampled por interpolação trilinear de volta para a resolução nativa do volume. O sinal desse SDF já diz diretamente se cada ponto está dentro ou fora do contorno. Depois disto define-se uma banda estreita à volta do zero, que corresponde à fronteira prevista, exatamente onde a Fase 1 está menos segura. Recorta-se então, em resolução nativa, só a região à volta dessa banda. É esse recorte que passa para a Fase 2.
+
+Por fim, na Fase 2, dentro desse recorte, a segunda rede treina e prevê sobre patches pequenos de 64^3 amostrados só dentro da banda. Cada patch recebe dois canais de entrada, a imagem original e o SDF upsampled que veio da Fase 1. Esta rede decide a máscara binária final apenas dentro desses patches. Fora da banda mantém-se sempre a resposta que a Fase 1 já tinha dado, para não gastar computação onde não é preciso.
+
+Ao momento falta-me apenas comparar os 5 folds e a variancia entre seeds q os testes que fiz anteriormente deram todos por volta de 94.5% de dice 3.11mm de HD95 e 1.10mm de ASD.
+em termos de eficiencia, o modelo tem 2.80 M de parâmetros e processa cada caso em ~1.03 s. A Fase 1 (1.40 M): Demora ~16 ms/caso, gasta 696 MB de VRAM no treino e 524 MB na inferência.Fase 2 (1.40 M): Demora ~1.01 s/caso, gasta 3.5 GB no treino e 1.8 GB na inferência.
+Ou seja à partida é tao bom quanto os modelos testados no paper anterior e bastante mais leve. 
