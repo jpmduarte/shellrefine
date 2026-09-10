@@ -130,7 +130,7 @@ def main():
     parser.add_argument("--manifest", required=True, help="the _submitted.csv from submit_grid.py")
     parser.add_argument("--section", required=True, help="marker name, e.g. STAGE_A1")
     parser.add_argument("--title", required=True)
-    parser.add_argument("--experiment-md", default="experiment.md")
+    parser.add_argument("--experiment-md", default="docs/experiment.md")
     args = parser.parse_args()
 
     with open(args.manifest, newline="") as f:

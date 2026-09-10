@@ -18,6 +18,75 @@ e a aritmética de custo.
   ([-1,1]) incompatível, `train.py` recusa-as agora com erro claro em vez de crash CUDA.
 - Folds independentes (seed própria, não os do projeto survey).
 
+## Glossário das tabelas
+
+### Nomes dos runs
+
+Cada `run_id` começa pelo estágio que o gerou. `a1`, `a1b`, `a1c`, `a1d` e `a3`
+treinam só a fase 1 ou fazem a comparação fase1×fase2; `a2` e `a2b` treinam a
+fase 2 completa em cima da fase 1 vencedora. Os finalistas do estágio C usam
+nomes próprios, `f1_bw`, `f2_plain`, `f3_mse`, explicados na secção do
+Estágio B.
+
+### Colunas comuns
+
+- `status`: `ok` se o resultado de avaliação foi encontrado no disco, `MISSING`
+  caso contrário.
+- `loss_p1` / `loss_p2`: a loss principal usada na fase 1 ou na fase 2. Ver
+  "Losses" abaixo para o que cada uma faz.
+- `lr_p1` / `lr_p2`: learning rate dessa fase.
+- `train_wall_s`: tempo total de treino em segundos.
+- `train_vram_mb`: pico de VRAM ocupado durante o treino, em MB.
+- `params_mb`: memória ocupada pelos pesos do modelo, em MB, não o número de
+  parâmetros.
+
+### Colunas só da fase 1
+
+- `dice` e `mae`: qualidade da fase 1 isolada. A fase 1 prevê um campo de
+  distância com sinal, `mae` mede o erro absoluto médio desse campo. `dice` é
+  o Dice do contorno obtido ao binarizar esse campo em zero.
+
+### Colunas só da fase 2
+
+- `dice_coarse`: Dice da máscara da fase 1 sozinha, já com upsample para a
+  resolução final. É a base que a fase 2 tem de bater.
+- `dice_refined`, `hd95_refined`, `asd_refined`: Dice, Hausdorff 95 (mm) e
+  distância de superfície média (mm) depois da fase 2 reescrever a banda à
+  volta do contorno. `hd95_refined` e `asd_refined` só existem depois da fase
+  2 porque a fase 1 sozinha não passa pelo cálculo de distância de superfície.
+
+### Boundary-weight (`bw_floor`, `bw_coef`)
+
+O boundary-weight dá mais peso aos voxels perto do contorno durante o treino.
+Funciona em dois passos. Primeiro, `bw_floor` define o peso dos voxels longe
+do contorno: com `bw_floor=1.0` todos os voxels pesam o mesmo e a ponderação
+está desligada, esse é o valor por omissão; com `bw_floor=0.2`, por exemplo,
+os voxels longe do contorno passam a pesar só 20% do que pesam os voxels
+perto dele. Depois, esse termo ponderado é somado à loss normal, multiplicado
+por `bw_coef`. Por isso a loss final fica `loss_base + bw_coef * loss_ponderada`,
+e só faz sentido olhar para `bw_coef` quando `bw_floor` é diferente de 1.0.
+
+### Gradient-difference (`gd_coef`)
+
+Só existe na fase 1. Compara a inclinação local do campo previsto com a do
+campo real em vez de comparar os valores diretamente, e essa inclinação é
+maior exactamente perto da superfície, onde o campo de distância muda mais
+depressa. Também é somado à loss normal, multiplicado por `gd_coef`. Com
+`gd_coef=0.0` está desligado.
+
+### Losses
+
+- `l1`: erro absoluto médio entre a previsão e o alvo. Usada na fase 1.
+- `mse`: erro quadrático médio.
+- `bce`: binary cross-entropy, precisa de valores entre 0 e 1, por isso só é
+  usada na fase 2.
+- `dice`: 1 menos o coeficiente de Dice entre previsão e alvo.
+- `dice_bce`: soma de `dice` com `bce`.
+- `mse_bce`: soma de `mse` com `bce`.
+
+`bce`, `dice_bce` e `mse_bce` ficam de fora do grid da fase 1 porque a fase 1
+prevê valores entre -1 e 1 e essas três losses só aceitam valores entre 0 e 1.
+
 ## Estágio A — sweep largo
 
 <!-- STAGE_A1_START -->

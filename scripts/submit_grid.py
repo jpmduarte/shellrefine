@@ -5,8 +5,8 @@ hand for the 6-point boundary-weight sweep this session. Writes the resulting jo
 back into a copy of the manifest so each point can be tracked.
 
 Usage:
-python submit_grid.py --manifest manifests/a1.csv
-python submit_grid.py --manifest manifests/a1.csv --dry-run   # print, don't submit
+python scripts/submit_grid.py --manifest manifests/a1.csv
+python scripts/submit_grid.py --manifest manifests/a1.csv --dry-run   # print, don't submit
 """
 
 import argparse
@@ -27,7 +27,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--manifest", required=True)
-    parser.add_argument("--job-script", default="run_grid_task.sh")
+    parser.add_argument("--job-script", default="scripts/run_grid_task.sh")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
