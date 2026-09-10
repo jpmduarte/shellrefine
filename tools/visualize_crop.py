@@ -1,7 +1,7 @@
 """
 Usage:
-python visualize_crop.py                    # picks first .npz in crops/
-python visualize_crop.py crops/case001.npz  # specific file
+python -m tools.visualize_crop                    # picks first .npz in crops/
+python -m tools.visualize_crop crops/case001.npz  # specific file
 """
 
 import argparse

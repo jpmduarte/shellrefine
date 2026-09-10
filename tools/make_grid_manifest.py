@@ -6,17 +6,17 @@ is deliberate (see plan): stages are cheap enough to eyeball between, not worth 
 chaining.
 
 Usage, in order:
-  python make_grid_manifest.py a1    --out manifests/a1.csv    --shells-dir ... --splits-json ...
-  python make_grid_manifest.py a1b   --out manifests/a1b.csv   --loss-p1 l1 --lr-p1 5e-4 ...
-  python make_grid_manifest.py a1c   --out manifests/a1c.csv   --loss-p1 l1 --lr-p1 5e-4 ...
-  python make_grid_manifest.py a1d   --out manifests/a1d.csv   --loss-p1 l1 --lr-p1 5e-4 \
+  python -m tools.make_grid_manifest a1    --out manifests/a1.csv    --shells-dir ... --splits-json ...
+  python -m tools.make_grid_manifest a1b   --out manifests/a1b.csv   --loss-p1 l1 --lr-p1 5e-4 ...
+  python -m tools.make_grid_manifest a1c   --out manifests/a1c.csv   --loss-p1 l1 --lr-p1 5e-4 ...
+  python -m tools.make_grid_manifest a1d   --out manifests/a1d.csv   --loss-p1 l1 --lr-p1 5e-4 \
                                         --bw-floor-p1 0.2 --bw-coef-p1 1.0 --gd-coef-p1 0.1 ...
-  python make_grid_manifest.py crops-prep --out manifests/crops_prep.csv \
+  python -m tools.make_grid_manifest crops-prep --out manifests/crops_prep.csv \
                                         --p1-checkpoint runs_or_experiment/.../phase1_best.pth ...
-  python make_grid_manifest.py a2    --out manifests/a2.csv    --base-run experiment/stageA/crops_prep ...
-  python make_grid_manifest.py a2b   --out manifests/a2b.csv   --base-run ... --loss-p2 dice_bce --lr-p2 3e-4
-  python make_grid_manifest.py a3    --out manifests/a3.csv    --base-run ... --combos combos.json
-  python make_grid_manifest.py stagec --out manifests/stagec.csv --finalists finalists.json \
+  python -m tools.make_grid_manifest a2    --out manifests/a2.csv    --base-run experiment/stageA/crops_prep ...
+  python -m tools.make_grid_manifest a2b   --out manifests/a2b.csv   --base-run ... --loss-p2 dice_bce --lr-p2 3e-4
+  python -m tools.make_grid_manifest a3    --out manifests/a3.csv    --base-run ... --combos combos.json
+  python -m tools.make_grid_manifest stagec --out manifests/stagec.csv --finalists finalists.json \
                                         --images-dir ... --labels-dir ... --shells-dir ... \
                                         --folds-json folds/folds.json --seeds 42,43,44
 """
@@ -198,7 +198,7 @@ def cmd_stagec(args):
     write_manifest(rows, args.out)
     print(f"({len(finalists)} finalists x {len(folds)} folds x {len(seeds)} seeds)")
     print("NOTE: each run_dir's splits.json must be resolved first, e.g.:")
-    print("  for row in manifest: make_fold_splits.py resolve --folds-json ... "
+    print("  for row in manifest: python -m tools.make_fold_splits resolve --folds-json ... "
          "--fold-idx <i> --shells-dir ... --out <run_dir>/splits.json")
 
 

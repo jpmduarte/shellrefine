@@ -1,9 +1,9 @@
 # Experimento: loss / lr / coeficientes por fase, validado com k-fold
 
-Todas as tabelas abaixo são geradas por `aggregate_results.py` a partir de
+Todas as tabelas abaixo são geradas por `python -m tools.aggregate_results` a partir de
 `profile/config.json`, `profile/summary.json` e `eval_val/summary.json` já gravados por
 cada run — sem logging novo de qualidade. As secções entre marcadores `<!-- ..._START -->`
-/ `<!-- ..._END -->` são regeneradas a cada `aggregate_results.py`; o resto deste ficheiro
+/ `<!-- ..._END -->` são regeneradas a cada `python -m tools.aggregate_results`; o resto deste ficheiro
 é escrito à mão e sobrevive a essas regenerações.
 
 ## Desenho

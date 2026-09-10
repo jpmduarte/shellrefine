@@ -1,7 +1,7 @@
 """
 Usage:
-python visualize_shell.py                      # picks first .npz in shells/
-python visualize_shell.py shells/case001.npz   # specific file
+python -m tools.visualize_shell                      # picks first .npz in shells/
+python -m tools.visualize_shell shells/case001.npz   # specific file
 """
 
 import argparse

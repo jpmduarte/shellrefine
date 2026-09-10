@@ -2,13 +2,13 @@
 Two-step k-fold split generator for Stage C of the experiment.
 
 Step 1 — generate the partition once (portable, no paths baked in):
-    python make_fold_splits.py generate --shells-dir runs/<base>/shells --k 5 --seed 12345 \
+    python -m tools.make_fold_splits generate --shells-dir runs/<base>/shells --k 5 --seed 12345 \
         --out folds/folds.json
 
 Step 2 — resolve one fold into a splits.json in the exact format dataset.get_splits() /
 dataset_phase2.get_crop_splits() already read without any code changes (both have a
 "load if the file exists" branch):
-    python make_fold_splits.py resolve --folds-json folds/folds.json --fold-idx 0 \
+    python -m tools.make_fold_splits resolve --folds-json folds/folds.json --fold-idx 0 \
         --shells-dir runs/<base>/shells --out runs/<run>/splits.json
 """
 

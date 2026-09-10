@@ -106,7 +106,7 @@ def main():
                               "one; required for --stage phase2, optional otherwise. If it "
                               "already contains a splits.json, get_splits()/get_crop_splits() "
                               "load it as-is (e.g. a k-fold split pre-written by "
-                              "make_fold_splits.py) instead of deriving a fresh 72/18 split")
+                              "tools.make_fold_splits) instead of deriving a fresh 72/18 split")
     parser.add_argument("--shells-dir", dest="shells_dir_override", type=str, default=None,
                          help="reuse an already-built shells/ directory (shells depend on "
                               "nothing fold/seed/hyperparameter-related) instead of "

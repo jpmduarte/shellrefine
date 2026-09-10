@@ -5,7 +5,7 @@ markdown table (quality + efficiency side by side) into experiment.md between na
 markers, replacing only that section so hand-written prose elsewhere survives re-runs.
 
 Usage:
-python aggregate_results.py --manifest manifests/a1_submitted.csv --section STAGE_A1 \
+python -m tools.aggregate_results --manifest manifests/a1_submitted.csv --section STAGE_A1 \
     --title "Stage A1 -- phase 1 loss x lr"
 """
 

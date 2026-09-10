@@ -8,7 +8,7 @@ The crops are rebuilt on the fly from the shells plus the fold's own phase-1
 checkpoint, so this works after the crop directories have been cleaned up.
 
 Usage:
-python visualize_folds.py --model f2_plain --seed 42 --out docs/folds_f2_plain.png
+python -m tools.visualize_folds --model f2_plain --seed 42 --out images/folds_f2_plain.png
 """
 
 import argparse
@@ -78,7 +78,7 @@ def main():
     ap.add_argument("--patch", type=int, default=64)
     ap.add_argument("--tile-batch", type=int, default=8)
     ap.add_argument("--threshold", type=float, default=0.5)
-    ap.add_argument("--out", default="docs/folds_qualitativo.png")
+    ap.add_argument("--out", default="images/folds_qualitativo.png")
     args = ap.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

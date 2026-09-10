@@ -259,7 +259,7 @@ def main():
             print_and_write(f"\n  Skipped (empty mask): {skipped}", f)
 
     if summary_path:
-        # Machine-readable twin of summary.txt, for aggregate_results.py.
+        # Machine-readable twin of summary.txt, for tools.aggregate_results.
         def agg(vals):
             return {
                 "mean": float(np.mean(vals)), "std": float(np.std(vals)),

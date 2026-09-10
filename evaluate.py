@@ -130,7 +130,7 @@ def main():
             print_and_write(f"\n  Skipped: {skipped}", f)
 
     if summary_path:
-        # Machine-readable twin of summary.txt, for aggregate_results.py — avoids
+        # Machine-readable twin of summary.txt, for tools.aggregate_results — avoids
         # regex-scraping the fixed-width text table.
         summary_json = {
             "checkpoint": checkpoint,
