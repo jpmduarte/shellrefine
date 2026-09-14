@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Slider
 
-CROPS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "crops")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CROPS = os.path.join(REPO_ROOT, "crops")
 
 
 def main():
